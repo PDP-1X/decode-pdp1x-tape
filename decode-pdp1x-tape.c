@@ -114,6 +114,8 @@ static uint32_t record(FILE *f)
   n1 = reclen(f);
   if (n1 == 0)
     return 0;
+  if (n1 & 0x80000000)
+    fprintf(stderr, "Error in tape record.\n");
   n2 = n1 & 0xFFFFFF;
   if (n2 != 6*1024)
     fprintf(stderr, "Record %u %x\n", n2, n1);
@@ -126,7 +128,7 @@ static uint32_t record(FILE *f)
   int i;
   for (i = 0; i < n2; i++)
     if (buffer[i] & 0xC0)
-      fatal("Bletcherous octet.");
+      fatal("Bletcherous magtape frame.");
 
   if (n2 & 1)
     fgetc (f);
@@ -394,6 +396,8 @@ static uint32_t file(FILE *f)
       *next |= buffer[i+1] <<  6;
       *next |= buffer[i+2];
       next++;
+      if (next - image > sizeof image / sizeof image[0])
+        fatal("Microtape image too large.");
     }
   }
 
@@ -425,8 +429,12 @@ static void utape(FILE *f)
     uint32_t x4 = fgetc(f);
     if (feof(f))
       break;
+    if ((x3 & 0xC0) != 0 || x4 != 0)
+      fatal("Bletcherous microtape word.");
     n1++;
     *next++ = x1 | (x2 << 8) | (x3 << 16);
+    if (next - image > sizeof image / sizeof image[0])
+      fatal("Microtape image too large.");
   }
 
   fprintf(stderr, "Tape %u octets\n", n1);
