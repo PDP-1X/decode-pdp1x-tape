@@ -203,8 +203,8 @@ static void silently(uint32_t offset)
 {
 }
 
-static void tree(uint32_t offset,
-                 void (*process_file) (uint32_t))
+static void traverse(uint32_t offset,
+                     void (*process_file) (uint32_t))
 {
   offset &= 0777;
   if (offset == 0)
@@ -219,10 +219,10 @@ static void tree(uint32_t offset,
     return;
   }
   if ((dir[offset + 4] & 0770000) == 0)
-    tree(dir[offset + 4], process_file);
+    traverse(dir[offset + 4], process_file);
   depth--;
   if (dir[offset] != 0)
-    tree(dir[offset], process_file);
+    traverse(dir[offset], process_file);
 }
 
 static void newfs()
@@ -299,11 +299,11 @@ static void process(void)
     printf("Usable blocks: %o\n", ptb[4]);
 
   files = depth = 0;
-  tree(dir[0], list_file);
+  traverse(dir[0], list_file);
   i = files;
 
   files = depth = 0;
-  tree(dir[1], silently);
+  traverse(dir[1], silently);
   printf("%o free directory entries\n", files);
 
   if (files + i != 102)
