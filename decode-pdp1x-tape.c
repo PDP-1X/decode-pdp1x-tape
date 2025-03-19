@@ -227,8 +227,6 @@ static void traverse(uint32_t offset,
 
 static void newfs()
 {
-  int i;
-
   printf("New file system\n");
   block_max = 01102 - 1;
 
@@ -243,8 +241,6 @@ static void newfs()
 
 static void oldfs()
 {
-  int i, n;
-
   printf("Old file system\n");
   block_max = 0777;
 
@@ -257,7 +253,8 @@ static void oldfs()
 
 static void process(void)
 {
-  int i, j;
+  int i;
+
 #if 0
   for (i = 0; i < 256*512; i += 256) {
     printf("BLOCK: file %d, physical %u, logical %u\n",
