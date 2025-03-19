@@ -8,7 +8,6 @@ static uint32_t image[100 * 2048];
 static uint32_t *next;
 static uint32_t dir[3*256];
 static uint32_t ptb[3*256];
-static char visited[1000];
 static int depth;
 static int files;
 static int uc_state = 0;
@@ -213,8 +212,6 @@ static void tree(uint32_t offset,
   files++;
   if (files > 102)
     return;
-  if (offset > 2 && offset < 512)
-    visited[filenum(offset)] = 1;
   process_file(offset);
   depth++;
   if (depth > 20) {
@@ -302,7 +299,6 @@ static void process(void)
     printf("Usable blocks: %o\n", ptb[4]);
 
   files = depth = 0;
-  memset(visited, 0, sizeof visited);
   tree(dir[0], list_file);
   i = files;
 
