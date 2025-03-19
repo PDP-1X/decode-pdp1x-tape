@@ -232,7 +232,7 @@ static void newfs()
 {
   int i;
 
-  printf("New file system; ");
+  printf("New file system\n");
   block_max = 01102 - 1;
 
   memcpy(dir,               image + 256 * physical(0) + 040, (256 - 040) * sizeof(uint32_t));
@@ -248,7 +248,7 @@ static void oldfs()
 {
   int i, n;
 
-  printf("Old file system; ");
+  printf("Old file system\n");
   block_max = 0777;
 
   memcpy(dir,       image + 256 * physical(6), 256 * sizeof(uint32_t));
@@ -297,6 +297,9 @@ static void process(void)
   fiodec_word(ptb[1]);
   fiodec_word(ptb[2]);
   putchar('\n');
+
+  if (ptb[4] > 0 && ptb[4] < 01102)
+    printf("Usable blocks: %o\n", ptb[4]);
 
   files = depth = 0;
   memset(visited, 0, sizeof visited);
