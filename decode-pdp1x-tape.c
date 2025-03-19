@@ -304,7 +304,6 @@ static void process(void)
   files = depth = 0;
   memset(visited, 0, sizeof visited);
   tree(dir[0], list_file);
-  printf("Files: %d(%o)\n", files, files);
   i = files;
 
   files = depth = 0;
