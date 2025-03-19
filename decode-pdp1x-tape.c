@@ -228,14 +228,10 @@ static void tree(uint32_t offset,
     tree(dir[offset], process_file);
 }
 
-static void newfs(int x)
+static void newfs()
 {
   int i;
 
-  if (file_no > 0)
-    putchar('\n');
-  if (file_no >= 0)
-    printf("File %d on magtape; ", file_no);
   printf("New file system; ");
   block_max = 01102 - 1;
 
@@ -246,64 +242,12 @@ static void newfs(int x)
   memcpy(ptb,               image + 256 * physical(2) + 040, (256 - 040) * sizeof(uint32_t));
   memcpy(ptb + (256 - 040), image + 256 * physical(3), 256 * sizeof(uint32_t));
   memcpy(ptb + (512 - 040), image + 256 * physical(4), 256 * sizeof(uint32_t));
-
-#if 0
-  for (i = 0; i < 040; i += 8) {
-    uint32_t *x = image + 256 * physical(0) + i;
-    printf("%06o %06o %06o %06o %06o %06o %06o %06o\n",
-           x[i], x[i+1], x[i+2], x[i+3], x[i+4], x[i+5], x[i+6], x[i+7]);
-  }
-#endif
-
-  printf("Tape name: ");
-  fiodec_word(ptb[0]);
-  fiodec_word(ptb[1]);
-  fiodec_word(ptb[2]);
-  putchar('\n');
-
-#if 0
-  printf("%06o %06o\n", ptb[3], ptb[4]);
-#endif
-
-  files = depth = 0;
-  memset(visited, 0, sizeof visited);
-  tree(dir[0], list_file);
-  printf("Files: %d(%o)\n", files, files);
-  i = files;
-
-  files = depth = 0;
-  tree(dir[1], silently);
-  printf("%o free directory entries\n", files);
-
-  if (files + i != 102)
-    printf("Used and free files doesn't match up.\n");
-
-#if 0
-  for (i = 040; i < 2*256+040; i += 5) {
-    printf("File %2d: %06o %06o ", (i-040)/5, dir[i+0], dir[i+4]);
-    uc_state = 0;
-    fiodec_word(dir[i+1]);
-    fiodec_word(dir[i+2]);
-    fiodec_word(dir[i+3]);
-    putchar('\n');
-  }
-
-  for (i = 0; i < 01102; i += 8) {
-    printf("%04o: %06o %06o %06o %06o %06o %06o %06o %06o\n",
-           i, ptb[i], ptb[i+1], ptb[i+2], ptb[i+3],
-           ptb[i+4], ptb[i+5], ptb[i+6], ptb[i+7]);
-  }
-#endif
 }
 
-static void oldfs(int x)
+static void oldfs()
 {
   int i, n;
 
-  if (file_no > 0)
-    putchar('\n');
-  if (file_no >= 0)
-    printf("File %d on magtape; ", file_no);
   printf("Old file system; ");
   block_max = 0777;
 
@@ -312,38 +256,6 @@ static void oldfs(int x)
 
   memcpy(ptb,       image + 256 * physical(8), 256 * sizeof(uint32_t));
   memcpy(ptb + 256, image + 256 * physical(9), 256 * sizeof(uint32_t));
-
-  printf("Tape name: ");
-  fiodec_word(ptb[0]);
-  fiodec_word(ptb[1]);
-  fiodec_word(ptb[2]);
-  putchar('\n');
-
-#if 0
-  printf("%06o %06o\n", ptb[3], ptb[4]);
-#endif
-
-  files = depth = 0;
-  memset(visited, 0, sizeof visited);
-  tree(dir[0], list_file);
-  printf("Files: %d(%o)\n", files, files);
-  i = files;
-
-  files = depth = 0;
-  tree(dir[1], silently);
-  printf("%o free directory entries\n", files);
-
-  if (files + i != 102)
-    printf("Used and free files doesn't match up.\n");
-
-#if 0
-  for (i = 0; i < 512; i += 8) {
-    printf("%06o: ", i);
-    printf("%06o %06o %06o %06o %06o %06o %06o %06o\n",
-           ptb[i], ptb[i+1], ptb[i+2], ptb[i+3],
-           ptb[i+4], ptb[i+5], ptb[i+6], ptb[i+7]);
-  }
-#endif
 }
 
 static void process(void)
@@ -369,11 +281,35 @@ static void process(void)
   }
 #endif
 
-  j = 256 * physical(0) + i % 256;
-  if (((image[j+040] | image[j+041]) & 0777000) == 0)
-    newfs(j);
+  if (file_no > 0)
+    putchar('\n');
+  if (file_no >= 0)
+    printf("File %d on magtape; ", file_no);
+
+  i = 256 * physical(0);
+  if (((image[i+040] | image[i+041]) & 0777000) == 0)
+    newfs();
   else
-    oldfs(256 * physical(6));
+    oldfs();
+
+  printf("Tape name: ");
+  fiodec_word(ptb[0]);
+  fiodec_word(ptb[1]);
+  fiodec_word(ptb[2]);
+  putchar('\n');
+
+  files = depth = 0;
+  memset(visited, 0, sizeof visited);
+  tree(dir[0], list_file);
+  printf("Files: %d(%o)\n", files, files);
+  i = files;
+
+  files = depth = 0;
+  tree(dir[1], silently);
+  printf("%o free directory entries\n", files);
+
+  if (files + i != 102)
+    printf("Used and free files don't match up.\n");
 }
 
 static uint32_t file(FILE *f)
