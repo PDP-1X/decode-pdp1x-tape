@@ -160,13 +160,14 @@ static int filenum(uint32_t x)
   return ((x & 0777) - 2) / 5;
 }
 
-static int blocks(uint32_t i)
+static int blocks(uint32_t i, void (*data)(uint32_t *))
 {
   int n = 0;
   while ((i & 01777) != 0) {
     //printf("[%06o]", i);
     n++;
     i &= 01777;
+    data(image + 256 * physical(i));
     i = ptb[i];
     if (n > 01110)
       break;
@@ -179,6 +180,10 @@ static void indent(int n)
   int i;
   for (i = 0; i < n; i++)
     putchar(' ');
+}
+
+static void ignore(uint32_t *data)
+{
 }
 
 static void list_file(uint32_t offset)
@@ -194,7 +199,7 @@ static void list_file(uint32_t offset)
   case 0400000:
   case 0500000:
   case 0600000:
-    printf("%3o", blocks(dir[offset + 4]));
+    printf("%3o", blocks(dir[offset + 4], ignore));
     break;
   }
   putchar('\n');
