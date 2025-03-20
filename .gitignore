@@ -1,3 +1,4 @@
 *~
 *.o
+convert-fiodec
 decode-pdp1x-tape
