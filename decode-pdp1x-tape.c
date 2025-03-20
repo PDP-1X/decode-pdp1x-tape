@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 static uint8_t buffer[100000];
 static uint32_t image[100 * 2048];
@@ -13,6 +15,11 @@ static int files;
 static int uc_state = 0;
 static int file_no = -1;
 static int block_max = 01102-1;
+static char names[10][10];
+static char file_name[200];
+static char *name_ptr;
+static FILE *output;
+static void (*operation)(uint32_t);
 
 char uctbl[64]={
    ' ', '"', '\'','~', '.', '.', '.', '<',    // 000
@@ -184,6 +191,71 @@ static void indent(int n)
     putchar(' ');
 }
 
+static void make_file_name(void)
+{
+  char *end = file_name + sizeof file_name;
+  char *p = file_name;
+  int i;
+  if (file_no >= 0) {
+    p += snprintf(p, end - p, "file%03d", file_no);
+    mkdir(file_name, 0700);
+    *p++ = '/';
+  }
+  p += snprintf(p, end - p, "%s", names[0]);
+  for (i = 1; i <= depth; i++)
+    p += snprintf(p, end - p, " %s", names[i]);
+}
+
+static void write_block(uint32_t *data)
+{
+  int i;
+  for (i = 0; i < 256; i++) {
+    fputc((data[i] >> 12) & 077, output);
+    fputc((data[i] >>  6) & 077, output);
+    fputc((data[i] >>  0) & 077, output);
+  }
+}
+
+static int putname(int x)
+{
+  if (x == '/') {
+    strcat(name_ptr, "\xE2\x88\x95");
+    name_ptr += 3;
+  } else {
+    *name_ptr++ = x;
+    *name_ptr = 0;
+  }
+  return 0;
+}
+
+static void trim(void)
+{
+  while (*--name_ptr == ' ')
+    *name_ptr = 0;
+}
+
+static void write_file(uint32_t offset)
+{
+  uc_state = 0;
+  name_ptr = names[depth];
+  fiodec_word(dir[offset + 1], putname);
+  fiodec_word(dir[offset + 2], putname);
+  fiodec_word(dir[offset + 3], putname);
+  trim();
+  switch (dir[offset + 4] & 0770000) {
+  case 0400000:
+  case 0500000:
+  case 0600000:
+    make_file_name();
+    output = fopen(file_name, "wb");
+    if (output == NULL)
+      fatal("Error opening output file.");
+    blocks(dir[offset + 4], write_block);
+    fclose(output);
+    break;
+  }
+}
+
 static void ignore(uint32_t *data)
 {
 }
@@ -304,7 +376,7 @@ static void process(void)
     printf("Usable blocks: %o\n", ptb[4]);
 
   files = depth = 0;
-  traverse(dir[0], list_file);
+  traverse(dir[0], operation);
   i = files;
 
   files = depth = 0;
@@ -382,13 +454,40 @@ static void utape(FILE *f)
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
+  void (*input)(FILE *) = NULL;
+  int opt;
+
+  while ((opt = getopt(argc, argv, "mtux")) != -1) {
+    switch (opt) {
+    case 'm':
+      if (input)
+        exit(1);
+      input = mtape;
+      break;
+    case 't':
+      operation = list_file;
+      break;
+    case 'u':
+      if (input)
+        exit(1);
+      input = utape;
+      break;
+    case 'x':
+      operation = write_file;
+      break;
+    default:
+      fprintf(stderr, "Usage: %s -mtux < input\n", argv[0]);
+      exit(1);
+    }
+  }
+
+  if (argc != optind)
     exit(1);
-  if (strcmp(argv[1], "-u") == 0)
-    utape(stdin);
-  else if (strcmp(argv[1], "-m") == 0)
-    mtape(stdin);
-  else
+  if (!input)
     exit(1);
+  if (!operation)
+    exit(1);
+
+  input(stdin);
   return 0;
 }
