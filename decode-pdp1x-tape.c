@@ -193,6 +193,7 @@ static void list_file(uint32_t offset)
   switch (dir[offset + 4] & 0770000) {
   case 0400000:
   case 0500000:
+  case 0600000:
     printf("%3o", blocks(dir[offset + 4]));
     break;
   }
