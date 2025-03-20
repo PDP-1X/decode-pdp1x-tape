@@ -150,7 +150,7 @@ static uint32_t physical(uint32_t n)
   if (n < (block_max+1)/2)
     return 1 + 2*n;
   else
-    return block_max - 1 - 2 * (n - 256);
+    return block_max - 1 - 2 * (n - (block_max+1)/2);
 }
 
 static int filenum(uint32_t x)
