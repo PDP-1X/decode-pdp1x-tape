@@ -58,7 +58,7 @@ static void fatal(const char *message)
   exit(1);
 }
 
-static void fiodec_char(uint8_t x)
+static void fiodec_char(uint8_t x, int (*output)(int))
 {
   x &= 077;
   switch (x) {
@@ -76,17 +76,17 @@ static void fiodec_char(uint8_t x)
     return;
   default:          
     if (uc_state)
-      putchar(uctbl[x]);
+      output(uctbl[x]);
     else
-      putchar(lctbl[x]);
+      output(lctbl[x]);
   }
 }
 
-static void fiodec_word(uint32_t word)
+static void fiodec_word(uint32_t word, int (*output)(int))
 {
-  fiodec_char(word >> 12);
-  fiodec_char(word >>  6);
-  fiodec_char(word >>  0);
+  fiodec_char(word >> 12, output);
+  fiodec_char(word >>  6, output);
+  fiodec_char(word >>  0, output);
 }
 
 static void dasm(uint32_t word)
@@ -186,9 +186,9 @@ static void list_file(uint32_t offset)
   //printf("File %02d: ", filenum(offset));
   indent(depth);
   uc_state = 0;
-  fiodec_word(dir[offset + 1]);
-  fiodec_word(dir[offset + 2]);
-  fiodec_word(dir[offset + 3]);
+  fiodec_word(dir[offset + 1], putchar);
+  fiodec_word(dir[offset + 2], putchar);
+  fiodec_word(dir[offset + 3], putchar);
   indent(10 - depth);
   switch (dir[offset + 4] & 0770000) {
   case 0400000:
@@ -265,13 +265,13 @@ static void process(void)
       printf("%03o/%03o: %06o ", i/256, j-i, image[j]);
       dasm(image[j]);
       printf("   ");
-      fiodec_word(image[j]);
+      fiodec_word(image[j], putchar);
       putchar('\n');
     }
     
     uc_state = 0;
     for (j = i; j < i+256; j++)
-      fiodec_word(image[j]);
+      fiodec_word(image[j], putchar);
     putchar('\n');
   }
 #endif
@@ -288,9 +288,9 @@ static void process(void)
     oldfs();
 
   printf("Tape name: ");
-  fiodec_word(ptb[0]);
-  fiodec_word(ptb[1]);
-  fiodec_word(ptb[2]);
+  fiodec_word(ptb[0], putchar);
+  fiodec_word(ptb[1], putchar);
+  fiodec_word(ptb[2], putchar);
   putchar('\n');
 
   if (ptb[4] > 0 && ptb[4] < 01102)
