@@ -1,4 +1,5 @@
 *~
 *.o
+binary-paper-tape
 convert-fiodec
 decode-pdp1x-tape
